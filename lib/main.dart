@@ -1,5 +1,5 @@
-import 'package:db_try1mobapp1/sqldb.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 void main() {
   runApp(const MyApp());
@@ -8,144 +8,178 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Order the Letters Game',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const OrderLettersGame(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class OrderLettersGame extends StatefulWidget {
+  const OrderLettersGame({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<OrderLettersGame> createState() => _OrderLettersGameState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _OrderLettersGameState extends State<OrderLettersGame> {
+  final String _wordToOrder = 'Dr.Mazin';
+  late List<String> _shuffledLetters;
+  late List<String?> _placedLetters;
+  bool _isCorrect = false;
 
-//TextEditingController delcon=TextEditingController();
-//TextEditingController newnote=TextEditingController();
-//TextEditingController readcon=TextEditingController();
+  @override
+  void initState() {
+    super.initState();
+    _shuffleWord();
+  }
 
+  void _shuffleWord() {
+    final List<String> letters = _wordToOrder.split('');
+    letters.shuffle(Random());
+    _shuffledLetters = letters;
+    _placedLetters = List.filled(_wordToOrder.length, null);
+    _isCorrect = false;
+  }
 
-  SqlDb sqlDb=SqlDb();
+  void _checkIfCorrect() {
+    if (_placedLetters.join('') == _wordToOrder) {
+      setState(() {
+        _isCorrect = true;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Order the Letters'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-           /* Padding(
-              padding: EdgeInsets.all(15),
-              child: TextField(
-               // controller: newnote,
-                maxLines: 4,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                                    labelText: 'Enter a note',
-                  hintText: 'Enter your Note overe here',
-                ),      ), ),*/
-            Center(
-              child: MaterialButton(
-                color: Colors.amber,
-                onPressed:() async{
-                  int response = await sqlDb.insertData("INSERT INTO 'notes' ('note') VALUES ('my note is ..... some text over here ')");
-                  print(response);
-                },
-                child:Text("Insert data"),
-              ),
+          children: <Widget>[
+            Text(
+              'Unscramble: ${_shuffledLetters.join(' ')}',
+              style: const TextStyle(fontSize: 20),
             ),
-            /*Center(
-              child: TextField(
-              //  controller: readcon,
-              ),
-            ),*/
-            Center(
-              child: MaterialButton(
-                color: Colors.blue,
-                onPressed:() async{
-                  List<Map> response=  await sqlDb.readData("SELECT * FROM 'notes' where id=1");
-                  print(response);
-
-                },
-                child:Text("Read data"),
-              ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(_wordToOrder.length, (index) {
+                return DragTarget<String>(
+                  builder: (
+                      BuildContext context,
+                      List<dynamic> accepted,
+                      List<dynamic> rejected,
+                      ) {
+                    return Container(
+                      width: 40.0,
+                      height: 40.0,
+                      margin: const EdgeInsets.all(4.0),
+                      decoration: BoxDecoration(
+                        color: _placedLetters[index] == null
+                            ? Colors.grey[300]
+                            : Colors.blue[200],
+                        border: Border.all(color: Colors.black12),
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      child: Center(
+                        child: Text(
+                          _placedLetters[index] ?? '',
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+                    );
+                  },
+                  onAccept: (String letter) {
+                    setState(() {
+                      if (_placedLetters[index] == null) {
+                        _placedLetters[index] = letter;
+                        _shuffledLetters.remove(letter);
+                        _checkIfCorrect();
+                      }
+                    });
+                  },
+                  onWillAccept: (String? letter) =>
+                  letter != null && _placedLetters[index] == null,
+                );
+              }),
             ),
-        /*Padding(
-            padding: EdgeInsets.all(15),
-            child: TextField(
-              //controller: delcon,
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'note No to delet',
-                         hintText: 'Enter a Note No. to be deleted',
-                ),      ), ),*/
-            Center(
-               child: MaterialButton(
-                color: Colors.blue,
-                onPressed:() async{
-                  int response=  await sqlDb.deleteData("DELETE FROM 'notes' WHERE id=1");
-                  print(response);
-
-                },
-                child:Text("Delete data"),
-              ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 8.0,
+              children: _shuffledLetters.map((letter) {
+                return Draggable<String>(
+                  data: letter,
+                  feedback: Container(
+                    width: 40.0,
+                    height: 40.0,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Center(
+                      child: Text(
+                        letter,
+                        style: const TextStyle(fontSize: 20, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                  childWhenDragging: Container(
+                    width: 40.0,
+                    height: 40.0,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Center(
+                      child: Text(
+                        letter,
+                        style: const TextStyle(fontSize: 20, color: Colors.grey),
+                      ),
+                    ),
+                  ),
+                  child: Container(
+                    width: 40.0,
+                    height: 40.0,
+                    decoration: BoxDecoration(
+                      color: Colors.blue,
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: Center(
+                      child: Text(
+                        letter,
+                        style: const TextStyle(fontSize: 20, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-            Center(
-              child: MaterialButton(
-                color: Colors.blue,
-                onPressed:() async{
-                  int response=  await sqlDb.updateData("UPDATE 'notes' SET note = 'not two' WHERE id = 2");
-                  print(response);
-
-                },
-                child:Text("update data"),
+            const SizedBox(height: 30),
+            if (_isCorrect)
+              const Text(
+                'Correct!',
+                style: TextStyle(fontSize: 24, color: Colors.green),
               ),
-            )
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _shuffleWord();
+                });
+              },
+              child: const Text('New Word'),
+            ),
           ],
         ),
-      ),       // This trailing comma makes auto-formatting nicer for build methods.
+      ),
     );
   }
 }
